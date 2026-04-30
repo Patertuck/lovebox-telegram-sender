@@ -138,11 +138,11 @@ public class LoveboxBot implements SpringLongPollingBot, LongPollingSingleThread
 	}
 
 	private void sendTextMessageInChunks(Message telegramMessage, String text) {
-		List<String> chunks = imageService.splitTextIntoMessageChunks(text);
-		for (String chunk : chunks) {
+		List<ImageService.PreparedTextMessage> preparedMessages = imageService.prepareTextMessages(text);
+		for (ImageService.PreparedTextMessage preparedMessage : preparedMessages) {
 			try {
-				Pair<String, byte[]> imagePair = imageService.createTextImageToPair(chunk);
-				sendLoveboxMessageToChats(telegramMessage.getChatId(), chunk, imagePair);
+				sendLoveboxMessageToChats(telegramMessage.getChatId(), preparedMessage.text(),
+						preparedMessage.imagePair());
 			}
 			catch (RuntimeException e) {
 				log.error("Exception occurred while creating Lovebox text image: {}", e.getMessage(), e);

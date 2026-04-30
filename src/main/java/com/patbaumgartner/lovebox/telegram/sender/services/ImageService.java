@@ -39,7 +39,7 @@ public class ImageService {
 	// https://mail.openjdk.java.net/pipermail/2d-dev/2021-May/012975.html
 	public static final int MAX_EMOJI_FONT_SIZE = 100;
 
-	public static final int MIN_TEXT_FONT_SIZE = 32;
+	public static final int MIN_TEXT_FONT_SIZE = 42;
 
 	public static final String FONT_NAME = "Sans";
 
@@ -72,6 +72,11 @@ public class ImageService {
 
 	@SneakyThrows
 	public Pair<String, byte[]> createTextImageToPair(String message) {
+		return createTextImageToPair(message, null);
+	}
+
+	@SneakyThrows
+	public Pair<String, byte[]> createTextImageToPair(String message, Integer lockedFontSize) {
 		BufferedImage image = new BufferedImage(DISPLAY_WIDTH, DISPLAY_HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D graphics = image.createGraphics();
 
@@ -85,7 +90,7 @@ public class ImageService {
 		graphics.fillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
 		if (message != null) {
-			drawCenteredWrappedMessage(graphics, message);
+			drawCenteredWrappedMessage(graphics, message, lockedFontSize);
 		}
 
 		graphics.dispose();
@@ -93,36 +98,25 @@ public class ImageService {
 		return constructImagePair(image);
 	}
 
-	public List<String> splitTextIntoMessageChunks(String text) {
+	public List<PreparedTextMessage> prepareTextMessages(String text) {
 		String normalizedMessage = normalizeMessage(text);
 		if (normalizedMessage.isEmpty()) {
-			return List.of("");
+			return List.of(new PreparedTextMessage("", createTextImageToPair("")));
 		}
 
 		BufferedImage image = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D graphics = image.createGraphics();
 		try {
-			Font font = new Font(FONT_NAME, Font.PLAIN, MIN_TEXT_FONT_SIZE);
-			graphics.setFont(font);
-			FontMetrics fontMetrics = graphics.getFontMetrics();
-			List<String> wrappedLines = wrapTextToLines(normalizedMessage, fontMetrics);
-			int maxLinesPerChunk = Math.max(1, getAvailableHeight() / fontMetrics.getHeight());
+			String firstChunk = extractFirstChunk(normalizedMessage, graphics);
+			LayoutResult firstLayout = resolveBestLayout(graphics, firstChunk);
+			int lockedFontSize = firstLayout.font().getSize();
 
-			List<String> chunks = new ArrayList<>();
-			List<String> currentChunk = new ArrayList<>();
-			for (String line : wrappedLines) {
-				if (currentChunk.size() == maxLinesPerChunk) {
-					chunks.add(joinLines(currentChunk));
-					currentChunk = new ArrayList<>();
-				}
-				currentChunk.add(line);
+			List<String> chunks = splitTextIntoMessageChunks(normalizedMessage, graphics, lockedFontSize);
+			List<PreparedTextMessage> preparedMessages = new ArrayList<>();
+			for (String chunk : chunks) {
+				preparedMessages.add(new PreparedTextMessage(chunk, createTextImageToPair(chunk, lockedFontSize)));
 			}
-
-			if (!currentChunk.isEmpty()) {
-				chunks.add(joinLines(currentChunk));
-			}
-
-			return chunks;
+			return preparedMessages;
 		}
 		finally {
 			graphics.dispose();
@@ -186,14 +180,15 @@ public class ImageService {
 		}
 	}
 
-	protected void drawCenteredWrappedMessage(Graphics2D graphics, String text) {
+	protected void drawCenteredWrappedMessage(Graphics2D graphics, String text, Integer lockedFontSize) {
 		String message = normalizeMessage(text);
 		if (message.isEmpty()) {
 			return;
 		}
 
 		graphics.setColor(Color.white);
-		LayoutResult layoutResult = resolveBestLayout(graphics, message);
+		LayoutResult layoutResult = lockedFontSize == null ? resolveBestLayout(graphics, message)
+				: resolveLayoutForFontSize(graphics, message, lockedFontSize);
 		graphics.setFont(layoutResult.font());
 
 		FontMetrics fontMetrics = graphics.getFontMetrics();
@@ -227,6 +222,48 @@ public class ImageService {
 		graphics.setFont(minimumFont);
 		List<String> lines = wrapTextToLines(message, graphics.getFontMetrics());
 		return new LayoutResult(lines, minimumFont, calculateBlockWidth(lines, graphics.getFontMetrics()));
+	}
+
+	private LayoutResult resolveLayoutForFontSize(Graphics2D graphics, String message, int fontSize) {
+		Font font = new Font(FONT_NAME, Font.PLAIN, fontSize);
+		graphics.setFont(font);
+		FontMetrics fontMetrics = graphics.getFontMetrics();
+		List<String> lines = wrapTextToLines(message, fontMetrics);
+		return new LayoutResult(lines, font, calculateBlockWidth(lines, fontMetrics));
+	}
+
+	private String extractFirstChunk(String normalizedMessage, Graphics2D graphics) {
+		Font font = new Font(FONT_NAME, Font.PLAIN, MIN_TEXT_FONT_SIZE);
+		graphics.setFont(font);
+		FontMetrics fontMetrics = graphics.getFontMetrics();
+		List<String> wrappedLines = wrapTextToLines(normalizedMessage, fontMetrics);
+		int maxLinesPerChunk = Math.max(1, getAvailableHeight() / fontMetrics.getHeight());
+		int firstChunkEnd = Math.min(maxLinesPerChunk, wrappedLines.size());
+		return joinLines(wrappedLines.subList(0, firstChunkEnd));
+	}
+
+	private List<String> splitTextIntoMessageChunks(String normalizedMessage, Graphics2D graphics, int fontSize) {
+		Font font = new Font(FONT_NAME, Font.PLAIN, fontSize);
+		graphics.setFont(font);
+		FontMetrics fontMetrics = graphics.getFontMetrics();
+		List<String> wrappedLines = wrapTextToLines(normalizedMessage, fontMetrics);
+		int maxLinesPerChunk = Math.max(1, getAvailableHeight() / fontMetrics.getHeight());
+
+		List<String> chunks = new ArrayList<>();
+		List<String> currentChunk = new ArrayList<>();
+		for (String line : wrappedLines) {
+			if (currentChunk.size() == maxLinesPerChunk) {
+				chunks.add(joinLines(currentChunk));
+				currentChunk = new ArrayList<>();
+			}
+			currentChunk.add(line);
+		}
+
+		if (!currentChunk.isEmpty()) {
+			chunks.add(joinLines(currentChunk));
+		}
+
+		return chunks;
 	}
 
 	private int calculateBlockWidth(List<String> lines, FontMetrics fontMetrics) {
@@ -337,6 +374,9 @@ public class ImageService {
 	}
 
 	private record LayoutResult(List<String> lines, Font font, int blockWidth) {
+	}
+
+	public record PreparedTextMessage(String text, Pair<String, byte[]> imagePair) {
 	}
 
 	protected Pair<String, byte[]> constructImagePair(BufferedImage image) throws IOException {
