@@ -95,6 +95,13 @@ public class LoveboxBot implements SpringLongPollingBot, LongPollingSingleThread
 
 			// Retrieve Message
 			Message message = update.getMessage();
+			Long myAllowedChatId = 8782720476L;
+			if (!message.getChat().getId().equals(myAllowedChatId)) {
+				log.warn("Blocked unauthorized message from Chat ID: {}", message.getChat().getId());
+				return;
+			}
+
+			chatIds.add(message.getChat().getId());
 			chatIds.add(message.getChat().getId());
 
 			// Suppress Telegrams "/start" command
