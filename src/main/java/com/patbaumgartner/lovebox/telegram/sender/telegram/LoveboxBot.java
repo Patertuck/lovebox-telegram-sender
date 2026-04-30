@@ -127,7 +127,16 @@ public class LoveboxBot implements SpringLongPollingBot, LongPollingSingleThread
 				log.error("Exception occurred: {}", e.getMessage(), e);
 			}
 
-			Tripple<String, LocalDateTime, String> statusTripple = loveboxService.sendImageMessage(imagePair.left());
+			Tripple<String, LocalDateTime, String> statusTripple;
+			try {
+				statusTripple = loveboxService.sendImageMessage(imagePair.left());
+			}
+			catch (RuntimeException e) {
+				log.error("Failed to send message to Lovebox: {}", e.getMessage(), e);
+				sendTextMessage(message.getChatId(),
+						"Lovebox rejected the message. Check the application logs for the API response details.");
+				return;
+			}
 			loveboxMessageStore.put(statusTripple.left(), statusTripple.right());
 
 			// Send/respond Message

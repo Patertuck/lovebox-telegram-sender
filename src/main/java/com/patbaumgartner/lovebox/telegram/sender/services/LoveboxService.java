@@ -119,13 +119,10 @@ public class LoveboxService {
 					sendPixNoteGraphqlRequestBody);
 			log.debug("Send pix note response: {}", sendPixNoteResponse);
 
-			JsonElement jsonRoot = JsonParser.parseString(sendPixNoteResponse.getBody());
-			JsonObject sendPixNote = jsonRoot.getAsJsonObject()
-				.get("data")
-				.getAsJsonObject()
-				.get("sendPixNote")
-				.getAsJsonObject();
-			JsonObject stati = sendPixNote.get("statusList").getAsJsonArray().get(0).getAsJsonObject();
+			JsonObject responseRoot = parseObject(sendPixNoteResponse.getBody(), "sendPixNote response");
+			JsonObject data = requireObject(responseRoot, "data", sendPixNoteResponse.getBody());
+			JsonObject sendPixNote = requireObject(data, "sendPixNote", sendPixNoteResponse.getBody());
+			JsonObject stati = requireFirstObjectFromArray(sendPixNote, "statusList", sendPixNoteResponse.getBody());
 
 			String id = sendPixNote.get("_id").getAsString();
 			String status = stati.get("label").getAsString();
@@ -215,6 +212,44 @@ public class LoveboxService {
 			}
 		}
 		return messageStatus;
+	}
+
+	private JsonObject parseObject(String body, String responseName) {
+		if (body == null || body.isBlank()) {
+			throw new IllegalStateException("%s is empty".formatted(responseName));
+		}
+		JsonElement parsed = JsonParser.parseString(body);
+		if (!parsed.isJsonObject()) {
+			throw new IllegalStateException("%s is not a JSON object: %s".formatted(responseName, body));
+		}
+		return parsed.getAsJsonObject();
+	}
+
+	private JsonObject requireObject(JsonObject parent, String fieldName, String responseBody) {
+		JsonElement field = parent.get(fieldName);
+		if (field == null || field.isJsonNull() || !field.isJsonObject()) {
+			log.error("Lovebox GraphQL response is missing object field '{}' in body: {}", fieldName, responseBody);
+			throw new IllegalStateException(
+					"Lovebox GraphQL response is missing object field '%s'".formatted(fieldName));
+		}
+		return field.getAsJsonObject();
+	}
+
+	private JsonObject requireFirstObjectFromArray(JsonObject parent, String fieldName, String responseBody) {
+		JsonElement field = parent.get(fieldName);
+		if (field == null || field.isJsonNull() || !field.isJsonArray()) {
+			log.error("Lovebox GraphQL response is missing array field '{}' in body: {}", fieldName, responseBody);
+			throw new IllegalStateException(
+					"Lovebox GraphQL response is missing array field '%s'".formatted(fieldName));
+		}
+		JsonArray array = field.getAsJsonArray();
+		if (array.isEmpty() || !array.get(0).isJsonObject()) {
+			log.error("Lovebox GraphQL response contains invalid array field '{}' in body: {}", fieldName,
+					responseBody);
+			throw new IllegalStateException(
+					"Lovebox GraphQL response contains invalid array field '%s'".formatted(fieldName));
+		}
+		return array.get(0).getAsJsonObject();
 	}
 
 }
