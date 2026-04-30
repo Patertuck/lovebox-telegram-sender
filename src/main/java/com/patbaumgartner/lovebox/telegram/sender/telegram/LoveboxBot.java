@@ -102,7 +102,6 @@ public class LoveboxBot implements SpringLongPollingBot, LongPollingSingleThread
 			}
 
 			chatIds.add(message.getChat().getId());
-			chatIds.add(message.getChat().getId());
 
 			// Suppress Telegrams "/start" command
 			String text = message.getText();
@@ -110,18 +109,18 @@ public class LoveboxBot implements SpringLongPollingBot, LongPollingSingleThread
 				return;
 			}
 
-			Pair<String, byte[]> imagePair = null;
+			if (message.hasText()) {
+				sendTextMessageInChunks(message, text);
+				return;
+			}
 
 			// Create Lovebox Image
+			Pair<String, byte[]> imagePair = null;
 			try {
 				if (message.hasPhoto()) {
 					File file = downloadImageFromPhotoMessage(message);
 					text = message.getCaption();
 					imagePair = imageService.resizeImageToPair(file, text);
-				}
-
-				if (message.hasText()) {
-					imagePair = imageService.createTextImageToPair(text);
 				}
 
 				// Set default message
@@ -134,25 +133,44 @@ public class LoveboxBot implements SpringLongPollingBot, LongPollingSingleThread
 				log.error("Exception occurred: {}", e.getMessage(), e);
 			}
 
-			Tripple<String, LocalDateTime, String> statusTripple;
+			sendLoveboxMessageToChats(message.getChatId(), text, imagePair);
+		}
+	}
+
+	private void sendTextMessageInChunks(Message telegramMessage, String text) {
+		List<String> chunks = imageService.splitTextIntoMessageChunks(text);
+		for (String chunk : chunks) {
 			try {
-				statusTripple = loveboxService.sendImageMessage(imagePair.left());
+				Pair<String, byte[]> imagePair = imageService.createTextImageToPair(chunk);
+				sendLoveboxMessageToChats(telegramMessage.getChatId(), chunk, imagePair);
 			}
 			catch (RuntimeException e) {
-				log.error("Failed to send message to Lovebox: {}", e.getMessage(), e);
-				sendTextMessage(message.getChatId(),
-						"Lovebox rejected the message. Check the application logs for the API response details.");
-				return;
+				log.error("Exception occurred while creating Lovebox text image: {}", e.getMessage(), e);
+				sendTextMessage(telegramMessage.getChatId(),
+						"Failed to create the Lovebox image. Check the application logs for details.");
+				break;
 			}
-			loveboxMessageStore.put(statusTripple.left(), statusTripple.right());
+		}
+	}
 
-			// Send/respond Message
-			for (long chatId : chatIds) {
-				Message sentMessage = sendPhotoMessage(chatId, text, imagePair, statusTripple);
-				telegramMessageStore
-					.compute(statusTripple.left(), (key, value) -> value == null ? new ArrayList<>() : value)
-					.add(new Pair<>(chatId, sentMessage));
-			}
+	private void sendLoveboxMessageToChats(long sourceChatId, String text, Pair<String, byte[]> imagePair) {
+		Tripple<String, LocalDateTime, String> statusTripple;
+		try {
+			statusTripple = loveboxService.sendImageMessage(imagePair.left());
+		}
+		catch (RuntimeException e) {
+			log.error("Failed to send message to Lovebox: {}", e.getMessage(), e);
+			sendTextMessage(sourceChatId,
+					"Lovebox rejected the message. Check the application logs for the API response details.");
+			return;
+		}
+		loveboxMessageStore.put(statusTripple.left(), statusTripple.right());
+
+		for (long chatId : chatIds) {
+			Message sentMessage = sendPhotoMessage(chatId, text, imagePair, statusTripple);
+			telegramMessageStore
+				.compute(statusTripple.left(), (key, value) -> value == null ? new ArrayList<>() : value)
+				.add(new Pair<>(chatId, sentMessage));
 		}
 	}
 
