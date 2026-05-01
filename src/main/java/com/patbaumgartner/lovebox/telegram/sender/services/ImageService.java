@@ -39,7 +39,7 @@ public class ImageService {
 	// https://mail.openjdk.java.net/pipermail/2d-dev/2021-May/012975.html
 	public static final int MAX_EMOJI_FONT_SIZE = 100;
 
-	public static final int MIN_TEXT_FONT_SIZE = 42;
+	public static final int MIN_TEXT_FONT_SIZE = 44;
 
 	public static final String FONT_NAME = "Sans";
 
@@ -72,25 +72,25 @@ public class ImageService {
 
 	@SneakyThrows
 	public Pair<String, byte[]> createTextImageToPair(String message) {
-		return createTextImageToPair(message, null);
+		return createTextImageToPair(message, null, createRandomBackgroundColor(), false);
 	}
 
 	@SneakyThrows
 	public Pair<String, byte[]> createTextImageToPair(String message, Integer lockedFontSize) {
+		return createTextImageToPair(message, lockedFontSize, createRandomBackgroundColor(), false);
+	}
+
+	@SneakyThrows
+	public Pair<String, byte[]> createTextImageToPair(String message, Integer lockedFontSize, Color backgroundColor,
+			boolean topAligned) {
 		BufferedImage image = new BufferedImage(DISPLAY_WIDTH, DISPLAY_HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D graphics = image.createGraphics();
 
-		// Set background color
-		Random rnd = new Random();
-		int red = rnd.nextInt(256);
-		int green = rnd.nextInt(256);
-		int blue = rnd.nextInt(256);
-		Color color = new Color(red, green, blue);
-		graphics.setColor(color);
+		graphics.setColor(backgroundColor);
 		graphics.fillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
 		if (message != null) {
-			drawCenteredWrappedMessage(graphics, message, lockedFontSize);
+			drawWrappedMessage(graphics, message, lockedFontSize, topAligned);
 		}
 
 		graphics.dispose();
@@ -112,9 +112,14 @@ public class ImageService {
 			int lockedFontSize = firstLayout.font().getSize();
 
 			List<String> chunks = splitTextIntoMessageChunks(normalizedMessage, graphics, lockedFontSize);
+			boolean splitSequence = chunks.size() > 1;
+			Color backgroundColor = splitSequence ? createRandomBackgroundColor() : null;
 			List<PreparedTextMessage> preparedMessages = new ArrayList<>();
 			for (String chunk : chunks) {
-				preparedMessages.add(new PreparedTextMessage(chunk, createTextImageToPair(chunk, lockedFontSize)));
+				Pair<String, byte[]> imagePair = splitSequence
+						? createTextImageToPair(chunk, lockedFontSize, backgroundColor, true)
+						: createTextImageToPair(chunk);
+				preparedMessages.add(new PreparedTextMessage(chunk, imagePair));
 			}
 			return preparedMessages;
 		}
@@ -180,7 +185,7 @@ public class ImageService {
 		}
 	}
 
-	protected void drawCenteredWrappedMessage(Graphics2D graphics, String text, Integer lockedFontSize) {
+	protected void drawWrappedMessage(Graphics2D graphics, String text, Integer lockedFontSize, boolean topAligned) {
 		String message = normalizeMessage(text);
 		if (message.isEmpty()) {
 			return;
@@ -196,8 +201,9 @@ public class ImageService {
 
 		int lineHeight = fontMetrics.getHeight();
 		int totalHeight = layoutResult.lines().size() * lineHeight;
-		int blockX = (DISPLAY_WIDTH - layoutResult.blockWidth()) / 2;
-		int y = (DISPLAY_HEIGHT - totalHeight) / 2 + fontMetrics.getAscent();
+		int blockX = topAligned ? BORDER_WIDTH : (DISPLAY_WIDTH - layoutResult.blockWidth()) / 2;
+		int y = topAligned ? BORDER_WIDTH + fontMetrics.getAscent()
+				: (DISPLAY_HEIGHT - totalHeight) / 2 + fontMetrics.getAscent();
 
 		for (String line : layoutResult.lines()) {
 			graphics.drawString(line, blockX, y);
@@ -363,6 +369,11 @@ public class ImageService {
 			return "";
 		}
 		return text.replace("\r\n", "\n").replace('\r', '\n').replace('\n', ' ').replaceAll("\\s+", " ").strip();
+	}
+
+	private Color createRandomBackgroundColor() {
+		Random random = new Random();
+		return new Color(random.nextInt(256), random.nextInt(256), random.nextInt(256));
 	}
 
 	private int getAvailableWidth() {

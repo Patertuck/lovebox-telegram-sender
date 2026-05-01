@@ -13,4 +13,7 @@ public class LoveboxBotProperties {
 	/* Telegram token. */
 	private String token;
 
+	/* Allowed chat identifier for manual Telegram messages. */
+	private Long allowedChatId;
+
 }

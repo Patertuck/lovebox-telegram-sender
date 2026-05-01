@@ -3,6 +3,7 @@
 # Lovebox Telegram Sender
 
 The app allows you to send messages to a single instance of Lovebox via Telegram Bot. Text messages and captioned photos are supported. Other message types (e.g. stickers, audio, etc.) will result in a standard message.
+It also supports an authenticated scheduler API for triggering Lovebox sends without relying on Telegram bot-to-bot messages.
 
 ## Application Setup
 
@@ -155,6 +156,9 @@ lovebox.box-id=417a114e58e15a0214cf3612
 # Telegram Bot Settings
 bot.username=Lovebox_bot
 bot.token=4072971853:ABEojZ42uNA6YYn_c7DF8RH0UOorqXuveSQ
+bot.allowed-chat-id=8782720476
+# Scheduler Integration
+integration.scheduler-token=change-me
 ```
 
 ### Setting Environment Variables e.g. for Docker
@@ -174,6 +178,24 @@ LOVEBOX_BOX_ID="417a114e58e15a0214cf3612"
 # Telegram Bot Settings
 BOT_USERNAME="Lovebox_bot"
 BOT_TOKEN="4072971853:ABEojZ42uNA6YYn_c7DF8RH0UOorqXuveSQ"
+BOT_ALLOWED_CHAT_ID="8782720476"
+# Scheduler Integration
+INTEGRATION_SCHEDULER_TOKEN="change-me"
+```
+
+### Sending a Scheduled Message via API
+
+Your scheduler can trigger a Lovebox send by calling this application directly.
+
+```bash
+curl --location --request POST 'http://localhost:8080/api/lovebox/messages' \
+--header 'X-Lovebox-Token: change-me' \
+--header 'content-type: application/json' \
+--data-raw '{
+  "command": "send",
+  "text": "Good morning, I love you",
+  "source": "scheduler"
+}'
 ```
 
 ## Building the Docker Container
