@@ -27,22 +27,34 @@ public class AnniversaryMessageScheduler {
 
 	@Scheduled(cron = "0 0 11 * * *", zone = "Europe/Zurich")
 	public void sendAnniversaryMessages() {
-		LocalDate sourceDate = LocalDate.now(clock.withZone(BUSINESS_ZONE)).minusYears(1);
+		OffsetDateTime runStartedAt = OffsetDateTime.now(clock.withZone(BUSINESS_ZONE));
+		LocalDate sourceDate = runStartedAt.toLocalDate().minusYears(1);
+		log.info("Anniversary scheduler woke up at {}. Looking for pending messages with source date {}.",
+				runStartedAt, sourceDate);
+
 		List<ScheduledMessage> dueMessages = scheduledMessageRepository.findPendingMessagesForSourceDate(sourceDate);
 		if (dueMessages.isEmpty()) {
-			log.debug("No anniversary messages due for source date {}", sourceDate);
+			log.info("Anniversary scheduler found no pending messages for source date {}.", sourceDate);
 			return;
 		}
 
+		log.info("Anniversary scheduler found {} pending message(s) for source date {}.", dueMessages.size(),
+				sourceDate);
 		for (ScheduledMessage dueMessage : dueMessages) {
 			try {
+				log.info("Sending anniversary message with id {} and body length {}.", dueMessage.id(),
+						dueMessage.body().length());
 				dispatchService.dispatchTextForScheduler(dueMessage.body());
-				scheduledMessageRepository.markSent(dueMessage.id(), OffsetDateTime.now(clock.withZone(BUSINESS_ZONE)));
+				OffsetDateTime sentAt = OffsetDateTime.now(clock.withZone(BUSINESS_ZONE));
+				scheduledMessageRepository.markSent(dueMessage.id(), sentAt);
+				log.info("Successfully sent anniversary message with id {} at {}.", dueMessage.id(), sentAt);
 			}
 			catch (RuntimeException e) {
 				log.error("Failed to send anniversary message with id {}: {}", dueMessage.id(), e.getMessage(), e);
-				scheduledMessageRepository.markPendingWithError(dueMessage.id(),
-						OffsetDateTime.now(clock.withZone(BUSINESS_ZONE)), e.getMessage());
+				OffsetDateTime failedAt = OffsetDateTime.now(clock.withZone(BUSINESS_ZONE));
+				scheduledMessageRepository.markPendingWithError(dueMessage.id(), failedAt, e.getMessage());
+				log.info("Left anniversary message with id {} in pending state for retry after failure at {}.",
+						dueMessage.id(), failedAt);
 			}
 		}
 	}
