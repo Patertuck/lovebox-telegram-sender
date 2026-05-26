@@ -1,0 +1,2 @@
+org.springframework.boot.env.EnvironmentPostProcessor=\
+com.patbaumgartner.lovebox.telegram.sender.config.DotenvEnvironmentPostProcessor
