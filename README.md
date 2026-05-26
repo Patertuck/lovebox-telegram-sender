@@ -1,4 +1,4 @@
-![maven-docker-publish](https://github.com/patbaumgartner/lovebox-telegram-sender/actions/workflows/maven-docker-publish.yml/badge.svg)
+![maven-docker-publish](https://github.com/Patertuck/lovebox-telegram-sender/actions/workflows/maven-docker-publish.yml/badge.svg)
 
 # Lovebox Telegram Sender
 
@@ -167,7 +167,7 @@ The following snippet can be passed as `.env` and read by `docker-compose.yml`, 
 
 ```bash
 # Docker Image
-LOVEBOX_TELEGRAM_SENDER_IMAGE="patbaumgartner/lovebox-telegram-sender:main"
+LOVEBOX_TELEGRAM_SENDER_IMAGE="patertuck/lovebox-telegram-sender:main"
 
 # Lovebox Login
 LOVEBOX_ENABLED=true
@@ -275,7 +275,7 @@ curl --location --request POST 'http://localhost:8080/api/lovebox/messages' \
 mvn spring-boot:build-image \
   --batch-mode \
   --no-transfer-progress \
-  -Dspring-boot.build-image.imageName='patbaumgartner/${project.artifactId}:${project.version}'
+  -Dspring-boot.build-image.imageName='patertuck/${project.artifactId}:${project.version}'
 ```
 
 ### Building the Docker Container and Pushing to Docker Hub
@@ -284,7 +284,7 @@ mvn spring-boot:build-image \
 mvn spring-boot:build-image \
  --batch-mode \
  --no-transfer-progress \
- -Dspring-boot.build-image.imageName='patbaumgartner/${project.artifactId}:${project.version}' \
+ -Dspring-boot.build-image.imageName='patertuck/${project.artifactId}:${project.version}' \
  -Dspring-boot.build-image.publish=true \
  -DCI_REGISTRY=https://index.docker.io/v1/ \
  -DCI_REGISTRY_USER=${DCI_REGISTRY_USER} \
@@ -324,7 +324,7 @@ After further research, it seems that the only way to add fonts to the build pac
 Build the `runImage` locally with the following command.
 
 ```bash
-docker build --no-cache -f Dockerfile.base-cnb -t patbaumgartner/run:base-cnb .
+docker build --no-cache -f Dockerfile.base-cnb -t patertuck/ubuntu-noble-run:latest .
 ```
 
 Since we are running the pull policy with `IF_NOT_PRESENT` in the `mvn spring-boot:build-image` command, we need to make sure that the latest version of the builder is available locally. Finally, pass the `runImage` to the `spring-boot-maven-plugin` to create the docker container containing the fonts.
@@ -333,8 +333,8 @@ Since we are running the pull policy with `IF_NOT_PRESENT` in the `mvn spring-bo
 mvn spring-boot:build-image \
  --batch-mode \
  --no-transfer-progress \
- -Dspring-boot.build-image.imageName='patbaumgartner/${project.artifactId}:${project.version}' \
- -Dspring-boot.build-image.runImage=patbaumgartner/builder-jammy-base:latest \
+ -Dspring-boot.build-image.imageName='patertuck/${project.artifactId}:${project.version}' \
+ -Dspring-boot.build-image.runImage=patertuck/ubuntu-noble-run:latest \
  -Dspring-boot.build-image.pullPolicy=IF_NOT_PRESENT
 ```
 

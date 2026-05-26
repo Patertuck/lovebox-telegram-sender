@@ -42,7 +42,7 @@ write_compose_file() {
   cat > "${COMPOSE_FILE}" <<'EOF'
 services:
   lovebox-telegram-sender:
-    image: ${LOVEBOX_TELEGRAM_SENDER_IMAGE:-patbaumgartner/lovebox-telegram-sender:main}
+    image: ${LOVEBOX_TELEGRAM_SENDER_IMAGE:-patertuck/lovebox-telegram-sender:main}
     container_name: lovebox-telegram-sender
     env_file:
       - ./.env
@@ -59,7 +59,7 @@ EOF
 write_env_template() {
   cat > "${ENV_FILE}" <<'EOF'
 # Docker Image
-LOVEBOX_TELEGRAM_SENDER_IMAGE="patbaumgartner/lovebox-telegram-sender:main"
+LOVEBOX_TELEGRAM_SENDER_IMAGE="patertuck/lovebox-telegram-sender:main"
 
 # Lovebox Login
 LOVEBOX_ENABLED=true
