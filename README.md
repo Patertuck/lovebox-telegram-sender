@@ -228,6 +228,22 @@ mvn spring-boot:build-image \
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
+SQLite uses a native library, so Java 21+ should be started with native access enabled. The Maven configuration in this project already adds `--enable-native-access=ALL-UNNAMED` for `spring-boot:run` and test execution.
+
+If you run the jar directly, pass the flag yourself:
+
+```bash
+java --enable-native-access=ALL-UNNAMED -jar target/lovebox-telegram-sender-0.1.0-SNAPSHOT.jar
+```
+
+### Running the Test Suite
+
+```bash
+mvn test
+```
+
+The Maven test configuration also adds `--enable-native-access=ALL-UNNAMED` so the SQLite warning does not appear during tests.
+
 ### Fixing Known Issues with Missing Fonts
 
 Since the application uses fonts, we need to make sure that fonts are part of the Docker container. The containers created above will throw an exception if they are `java.lang.NullPointerException`: Cannot load from short array because `sun.awt.FontConfiguration.head` is null.
