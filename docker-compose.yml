@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   lovebox-telegram-sender:
     image: ${LOVEBOX_TELEGRAM_SENDER_IMAGE:-patbaumgartner/lovebox-telegram-sender:main}
