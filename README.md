@@ -84,7 +84,7 @@ curl --location --request POST 'https://app-api.loveboxlove.com/v1/graphql' \
           "_id": "417a114e58e15a0214cf3612",
           "color": "#8A64FF",
           "companyId": "",
-          // lovebox.signature
+          // lovebox.signature 
           "signature": "Signature",
           "picture": null,
           "nickname": "Nickname",
@@ -296,6 +296,9 @@ mvn spring-boot:build-image \
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
+
+Plain local Spring runs now auto-read the repo-root `.env` file. This makes IntelliJ runs and `mvn spring-boot:run`
+behave like `docker compose` for the same config values. Process environment variables still override `.env`.
 
 SQLite uses a native library, so Java 21+ should be started with native access enabled. The Maven configuration in this project already adds `--enable-native-access=ALL-UNNAMED` for `spring-boot:run` and test execution.
 
