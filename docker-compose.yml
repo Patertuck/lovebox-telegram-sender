@@ -2,7 +2,14 @@ version: "3.8"
 
 services:
   lovebox-telegram-sender:
-    image: lovebox-telegram-sender:0.1.0-SNAPSHOT
+    image: ${LOVEBOX_TELEGRAM_SENDER_IMAGE:-patbaumgartner/lovebox-telegram-sender:main}
     container_name: lovebox-telegram-sender
     env_file:
       - ./.env
+    environment:
+      INTEGRATION_MESSAGES_DB_PATH: /app/data/messages.db
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

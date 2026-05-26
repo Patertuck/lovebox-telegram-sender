@@ -166,6 +166,9 @@ integration.scheduler-token=change-me
 The following snippet can be passed as `.env` and read by `docker-compose.yml`, or used to pass directly to the the `docker run` command.
 
 ```bash
+# Docker Image
+LOVEBOX_TELEGRAM_SENDER_IMAGE="patbaumgartner/lovebox-telegram-sender:main"
+
 # Lovebox Login
 LOVEBOX_ENABLED=true
 LOVEBOX_EMAIL="me@email.com"
@@ -181,7 +184,40 @@ BOT_TOKEN="4072971853:ABEojZ42uNA6YYn_c7DF8RH0UOorqXuveSQ"
 BOT_ALLOWED_CHAT_ID="8782720476"
 # Scheduler Integration
 INTEGRATION_SCHEDULER_TOKEN="change-me"
+INTEGRATION_MESSAGES_DB_PATH="/app/data/messages.db"
 ```
+
+Do not commit your real `.env`. This repository ignores `.env` so secrets stay local to your machine or server.
+
+## Running as One Container
+
+The Docker image contains the full application: Telegram bot, internal anniversary scheduler, and HTTP API.
+
+The SQLite database is intentionally **not** part of the published Docker Hub image. Mount it from the server so it stays private and survives container updates.
+
+Server file layout example:
+
+```text
+server/
+  docker-compose.yml
+  .env
+  data/
+    messages.db
+```
+
+Run it with Docker Compose:
+
+```bash
+docker compose up -d
+```
+
+The provided `docker-compose.yml` will:
+- pull the published app image from Docker Hub
+- expose the HTTP API on port `8080`
+- load runtime secrets from `.env`
+- mount `./data` into `/app/data`
+
+This means your private `messages.db` stays on the server and is not baked into the Docker Hub image.
 
 ### Sending a Scheduled Message via API
 
