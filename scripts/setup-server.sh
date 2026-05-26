@@ -2,16 +2,11 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-
 INSTALL_DIR="${1:-/opt/lovebox-telegram-sender}"
 APP_DIR="${INSTALL_DIR%/}"
 DATA_DIR="${APP_DIR}/data"
 ENV_FILE="${APP_DIR}/.env"
 COMPOSE_FILE="${APP_DIR}/docker-compose.yml"
-ENV_TEMPLATE="${REPO_ROOT}/.env.example"
-COMPOSE_TEMPLATE="${REPO_ROOT}/docker-compose.yml"
 
 PLACEHOLDER_VALUES=(
   "replace-me"
@@ -43,15 +38,59 @@ ensure_directory_structure() {
   mkdir -p "${DATA_DIR}"
 }
 
+write_compose_file() {
+  cat > "${COMPOSE_FILE}" <<'EOF'
+services:
+  lovebox-telegram-sender:
+    image: ${LOVEBOX_TELEGRAM_SENDER_IMAGE:-patbaumgartner/lovebox-telegram-sender:main}
+    container_name: lovebox-telegram-sender
+    env_file:
+      - ./.env
+    environment:
+      INTEGRATION_MESSAGES_DB_PATH: /app/data/messages.db
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+EOF
+}
+
+write_env_template() {
+  cat > "${ENV_FILE}" <<'EOF'
+# Docker Image
+LOVEBOX_TELEGRAM_SENDER_IMAGE="patbaumgartner/lovebox-telegram-sender:main"
+
+# Lovebox Login
+LOVEBOX_ENABLED=true
+LOVEBOX_EMAIL="me@email.com"
+LOVEBOX_PASSWORD="mySecret"
+
+# Lovebox Setting
+LOVEBOX_SIGNATURE="Signature"
+LOVEBOX_DEVICE_ID="42fab8322d8cec91"
+LOVEBOX_BOX_ID="417a114e58e15a0214cf3612"
+
+# Telegram Bot Settings
+BOT_USERNAME="Lovebox_bot"
+BOT_TOKEN="replace-me"
+BOT_ALLOWED_CHAT_ID="8782720476"
+
+# Scheduler Integration
+INTEGRATION_SCHEDULER_TOKEN="change-me"
+INTEGRATION_MESSAGES_DB_PATH="/app/data/messages.db"
+EOF
+}
+
 install_runtime_files() {
   if [[ ! -f "${COMPOSE_FILE}" ]]; then
-    cp "${COMPOSE_TEMPLATE}" "${COMPOSE_FILE}"
-    echo "Copied docker-compose.yml to ${COMPOSE_FILE}"
+    write_compose_file
+    echo "Created ${COMPOSE_FILE}"
   fi
 
   if [[ ! -f "${ENV_FILE}" ]]; then
-    cp "${ENV_TEMPLATE}" "${ENV_FILE}"
-    echo "Created ${ENV_FILE} from .env.example"
+    write_env_template
+    echo "Created ${ENV_FILE}"
     echo "Fill in the required values, place your database at ${DATA_DIR}/messages.db, then rerun this script."
     exit 1
   fi

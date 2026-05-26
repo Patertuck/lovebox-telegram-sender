@@ -223,16 +223,21 @@ This means your private `messages.db` stays on the server and is not baked into 
 
 For a Linux VPS with Docker and Docker Compose already installed, you can use the setup script to stage the deployment files, validate the server inputs, and start the container.
 
-Copy the repo to the server, place your existing database at `data/messages.db`, then run:
+The script is self-contained. You can send only:
+- `setup-server.sh`
+- an optional ready-made `.env`
+- `data/messages.db`
+
+Then on the server, run:
 
 ```bash
-bash scripts/setup-server.sh
+bash setup-server.sh
 ```
 
 The script will:
 - create `/opt/lovebox-telegram-sender` by default
-- copy `docker-compose.yml` there
-- create `.env` from `.env.example` if needed
+- generate `docker-compose.yml` there
+- generate `.env` if needed
 - refuse to start if `.env` still contains placeholder values
 - refuse to start if `data/messages.db` is missing
 - refuse to start if port `8080` is already in use
@@ -241,7 +246,7 @@ The script will:
 If you want a different install directory, pass it as the first argument:
 
 ```bash
-bash scripts/setup-server.sh /srv/lovebox-telegram-sender
+bash setup-server.sh /srv/lovebox-telegram-sender
 ```
 
 On the first run, the script may stop after creating `.env`. Fill in the real values, make sure `${INSTALL_DIR}/data/messages.db` exists, and run the script again.
