@@ -4,6 +4,8 @@ This application sends a Lovebox message scheduled for the current date at 21:30
 
 It does not poll Lovebox delivery states, receive hearts, or track whether a message arrived.
 
+When there is no scheduled database message for a date, it sends one random unused picture from `data/pictures`. A picture is moved to `data/pictures/sent` only after Lovebox accepts its submission, so it is not sent twice. The application temporarily copies a selected picture to `data/pictures/.sending` before submitting it; do not add files there.
+
 ## Scheduled-message database
 
 The SQLite database has one table with exactly two columns:
@@ -54,11 +56,14 @@ Use `.env.example` as the template for `.env`. The relevant database setting is:
 
 ```properties
 MESSAGES_DATABASE_PATH=/app/data/messages.db
+MESSAGES_PICTURES_PATH=/app/data/pictures
 ```
 
 The normal schedule is 21:30 Europe/Zurich.
 
 The regular container mounts `./data` at `/app/data`, so the schedule persists across image updates.
+
+Put fallback images (`.jpg`, `.jpeg`, or `.png`) directly in `data/pictures`. Do not put images in `data/pictures/sent`; that directory is managed by the application.
 
 ## Run and test
 

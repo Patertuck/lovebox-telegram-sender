@@ -34,7 +34,7 @@ require_docker_compose() {
 }
 
 ensure_directory_structure() {
-  mkdir -p "${DATA_DIR}"
+  mkdir -p "${DATA_DIR}/pictures"
 }
 
 write_compose_file() {
@@ -47,6 +47,7 @@ services:
       - ./.env
     environment:
       MESSAGES_DATABASE_PATH: /app/data/messages.db
+      MESSAGES_PICTURES_PATH: /app/data/pictures
     volumes:
       - ./data:/app/data
     restart: unless-stopped
@@ -75,6 +76,7 @@ BOT_ALLOWED_CHAT_ID="8782720476"
 
 # Scheduled messages
 MESSAGES_DATABASE_PATH="/app/data/messages.db"
+MESSAGES_PICTURES_PATH="/app/data/pictures"
 EOF
 }
 
@@ -115,6 +117,7 @@ check_required_env_keys() {
     "BOT_TOKEN="
     "BOT_ALLOWED_CHAT_ID="
     "MESSAGES_DATABASE_PATH="
+    "MESSAGES_PICTURES_PATH="
   )
 
   local key

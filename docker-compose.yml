@@ -6,6 +6,7 @@ services:
       - ./.env
     environment:
       MESSAGES_DATABASE_PATH: /app/data/messages.db
+      MESSAGES_PICTURES_PATH: /app/data/pictures
     volumes:
       - ./data:/app/data
     restart: unless-stopped

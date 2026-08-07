@@ -11,4 +11,6 @@ public class MessageProperties {
 
 	private String documentPath = "message.docx";
 
+	private String picturesPath;
+
 }

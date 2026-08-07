@@ -20,6 +20,8 @@ public class ScheduledMessageScheduler {
 
 	private final LoveboxMessageDispatchService dispatchService;
 
+	private final FallbackPictureService fallbackPictureService;
+
 	private final Clock clock;
 
 	@Scheduled(cron = "${messages.schedule-cron:0 30 21 * * *}", zone = "Europe/Zurich")
@@ -34,7 +36,10 @@ public class ScheduledMessageScheduler {
 			catch (RuntimeException e) {
 				log.error("Failed to submit scheduled message for {}.", sendDate, e);
 			}
-		}, () -> log.info("No scheduled message found for {}.", sendDate));
+		}, () -> {
+			log.info("No scheduled message found for {}. Looking for a fallback picture.", sendDate);
+			fallbackPictureService.sendRandomPicture();
+		});
 	}
 
 }

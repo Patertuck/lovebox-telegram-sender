@@ -24,11 +24,14 @@ class ScheduledMessageSchedulerTest {
 	@Mock
 	private LoveboxMessageDispatchService dispatchService;
 
+	@Mock
+	private FallbackPictureService fallbackPictureService;
+
 	private ScheduledMessageScheduler scheduler;
 
 	@BeforeEach
 	void setUp() {
-		scheduler = new ScheduledMessageScheduler(repository, dispatchService,
+		scheduler = new ScheduledMessageScheduler(repository, dispatchService, fallbackPictureService,
 				Clock.fixed(Instant.parse("2026-05-26T16:00:00Z"), ZoneId.of("Europe/Zurich")));
 	}
 
@@ -40,15 +43,17 @@ class ScheduledMessageSchedulerTest {
 		scheduler.sendScheduledMessage();
 
 		verify(dispatchService).dispatchTextForScheduler("26.05.26\nHello");
+		verifyNoInteractions(fallbackPictureService);
 	}
 
 	@Test
-	void doesNothingWhenNoMessageIsScheduledForToday() {
+	void sendsFallbackPictureWhenNoMessageIsScheduledForToday() {
 		when(repository.findMessageForDate(LocalDate.of(2026, 5, 26))).thenReturn(Optional.empty());
 
 		scheduler.sendScheduledMessage();
 
 		verifyNoInteractions(dispatchService);
+		verify(fallbackPictureService).sendRandomPicture();
 	}
 
 }
