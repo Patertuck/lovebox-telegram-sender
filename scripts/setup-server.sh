@@ -47,9 +47,7 @@ services:
     env_file:
       - ./.env
     environment:
-      INTEGRATION_MESSAGES_DB_PATH: /app/data/messages.db
-    ports:
-      - "8080:8080"
+      MESSAGES_DATABASE_PATH: /app/data/messages.db
     volumes:
       - ./data:/app/data
     restart: unless-stopped
@@ -76,9 +74,8 @@ BOT_USERNAME="Lovebox_bot"
 BOT_TOKEN="replace-me"
 BOT_ALLOWED_CHAT_ID="8782720476"
 
-# Scheduler Integration
-INTEGRATION_SCHEDULER_TOKEN="change-me"
-INTEGRATION_MESSAGES_DB_PATH="/app/data/messages.db"
+# Scheduled messages
+MESSAGES_DATABASE_PATH="/app/data/messages.db"
 EOF
 }
 
@@ -135,8 +132,7 @@ check_required_env_keys() {
     "BOT_USERNAME="
     "BOT_TOKEN="
     "BOT_ALLOWED_CHAT_ID="
-    "INTEGRATION_SCHEDULER_TOKEN="
-    "INTEGRATION_MESSAGES_DB_PATH="
+    "MESSAGES_DATABASE_PATH="
   )
 
   local key

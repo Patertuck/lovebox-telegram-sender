@@ -26,6 +26,7 @@
     <emoji4j.version>6.0</emoji4j.version>
     <imgscalr.version>4.2</imgscalr.version>
     <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
+	<poi.version>5.4.1</poi.version>
     <java.version>21</java.version>
     <sqlite.native.access.flag>--enable-native-access=ALL-UNNAMED</sqlite.native.access.flag>
     <spring-javaformat-maven-plugin.version>0.0.47</spring-javaformat-maven-plugin.version>
@@ -33,10 +34,6 @@
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-restclient</artifactId>
@@ -66,6 +63,11 @@
       <groupId>org.xerial</groupId>
       <artifactId>sqlite-jdbc</artifactId>
       <version>3.50.3.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+	  <version>${poi.version}</version>
     </dependency>
 
     <dependency>

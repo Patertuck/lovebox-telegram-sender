@@ -7,9 +7,6 @@ import org.springframework.web.service.annotation.PostExchange;
 
 public interface LoveboxRestClient {
 
-	@PostExchange("/v1/auth/checkEmail")
-	ResponseEntity<CheckEmailResponseBody> checkEmail(@RequestBody CheckEmailRequestBody request);
-
 	@PostExchange("/v1/auth/loginWithPassword")
 	ResponseEntity<LoginWithPasswordResponseBody> loginWithPassword(@RequestBody LoginWithPasswordlRequestBody request);
 
