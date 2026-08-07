@@ -1,6 +1,5 @@
 package com.patbaumgartner.lovebox.telegram.sender.services;
 
-import com.patbaumgartner.lovebox.telegram.sender.utils.Pair;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,8 +17,8 @@ public class LoveboxMessageDispatchService {
 
 	public void dispatchText(Long sourceChatId, String text) {
 		try {
-			for (ImageService.PreparedTextMessage preparedMessage : imageService.prepareTextMessages(text)) {
-				dispatchPreparedMessage(preparedMessage.text(), preparedMessage.imagePair());
+			for (String imageAsBase64 : imageService.prepareTextMessages(text)) {
+				dispatchImage(imageAsBase64);
 			}
 		}
 		catch (RuntimeException e) {
@@ -30,13 +29,13 @@ public class LoveboxMessageDispatchService {
 	}
 
 	public void dispatchTextForScheduler(String text) {
-		for (ImageService.PreparedTextMessage preparedMessage : imageService.prepareTextMessages(text)) {
-			dispatchPreparedMessage(preparedMessage.text(), preparedMessage.imagePair());
+		for (String imageAsBase64 : imageService.prepareTextMessages(text)) {
+			dispatchImage(imageAsBase64);
 		}
 	}
 
-	public void dispatchPreparedMessage(String text, Pair<String, byte[]> imagePair) {
-		loveboxService.sendImageMessage(imagePair.left());
+	public void dispatchImage(String imageAsBase64) {
+		loveboxService.sendImageMessage(imageAsBase64);
 	}
 
 }

@@ -9,15 +9,12 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.ZoneId;
 
 @Slf4j
 @Component
 @Profile("!import")
 @RequiredArgsConstructor
-public class AnniversaryMessageScheduler {
-
-	static final ZoneId BUSINESS_ZONE = ZoneId.of("Europe/Zurich");
+public class ScheduledMessageScheduler {
 
 	private final ScheduledMessageRepository scheduledMessageRepository;
 
@@ -27,7 +24,7 @@ public class AnniversaryMessageScheduler {
 
 	@Scheduled(cron = "${messages.schedule-cron:0 30 21 * * *}", zone = "Europe/Zurich")
 	public void sendScheduledMessage() {
-		LocalDate sendDate = LocalDate.now(clock.withZone(BUSINESS_ZONE));
+		LocalDate sendDate = LocalDate.now(clock);
 		log.info("Message scheduler woke up. Looking for a message scheduled for {}.", sendDate);
 		scheduledMessageRepository.findMessageForDate(sendDate).ifPresentOrElse(dueMessage -> {
 			try {

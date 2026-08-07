@@ -1,6 +1,5 @@
 package com.patbaumgartner.lovebox.telegram.sender.services;
 
-import com.patbaumgartner.lovebox.telegram.sender.utils.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -30,7 +29,7 @@ class LoveboxMessageDispatchServiceTest {
 	@Test
 	void dispatchesEachPreparedTextChunkToLovebox() {
 		when(imageService.prepareTextMessages("hello"))
-			.thenReturn(List.of(new ImageService.PreparedTextMessage("hello", new Pair<>("base64", new byte[] { 1 }))));
+			.thenReturn(List.of("base64"));
 
 		dispatchService.dispatchTextForScheduler("hello");
 

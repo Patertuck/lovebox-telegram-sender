@@ -16,7 +16,7 @@ import java.util.Optional;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AnniversaryMessageSchedulerTest {
+class ScheduledMessageSchedulerTest {
 
 	@Mock
 	private ScheduledMessageRepository repository;
@@ -24,11 +24,11 @@ class AnniversaryMessageSchedulerTest {
 	@Mock
 	private LoveboxMessageDispatchService dispatchService;
 
-	private AnniversaryMessageScheduler scheduler;
+	private ScheduledMessageScheduler scheduler;
 
 	@BeforeEach
 	void setUp() {
-		scheduler = new AnniversaryMessageScheduler(repository, dispatchService,
+		scheduler = new ScheduledMessageScheduler(repository, dispatchService,
 				Clock.fixed(Instant.parse("2026-05-26T16:00:00Z"), ZoneId.of("Europe/Zurich")));
 	}
 

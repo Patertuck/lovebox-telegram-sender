@@ -3,7 +3,6 @@ package com.patbaumgartner.lovebox.telegram.sender.telegram;
 import com.patbaumgartner.lovebox.telegram.sender.services.ImageService;
 import com.patbaumgartner.lovebox.telegram.sender.services.LoveboxMessageDispatchService;
 import com.patbaumgartner.lovebox.telegram.sender.services.TelegramMessageService;
-import com.patbaumgartner.lovebox.telegram.sender.utils.Pair;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -76,8 +75,7 @@ public class LoveboxBot implements SpringLongPollingBot, LongPollingSingleThread
 		if (file == null) {
 			throw new IllegalStateException("Telegram photo could not be downloaded");
 		}
-		Pair<String, byte[]> imagePair = imageService.resizeImageToPair(file, message.getCaption());
-		dispatchService.dispatchPreparedMessage(message.getCaption(), imagePair);
+		dispatchService.dispatchImage(imageService.resizeImageToBase64(file, message.getCaption()));
 	}
 
 	@AfterBotRegistration

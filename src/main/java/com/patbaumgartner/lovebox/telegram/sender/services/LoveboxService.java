@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.patbaumgartner.lovebox.telegram.sender.rest.clients.GraphqlRequestBody;
 import com.patbaumgartner.lovebox.telegram.sender.rest.clients.LoginWithPasswordResponseBody;
-import com.patbaumgartner.lovebox.telegram.sender.rest.clients.LoginWithPasswordlRequestBody;
+import com.patbaumgartner.lovebox.telegram.sender.rest.clients.LoginWithPasswordRequestBody;
 import com.patbaumgartner.lovebox.telegram.sender.rest.clients.LoveboxRestClient;
 import com.patbaumgartner.lovebox.telegram.sender.rest.clients.LoveboxRestClientProperties;
 import lombok.RequiredArgsConstructor;
@@ -59,7 +59,7 @@ public class LoveboxService {
 
 	private String loginAndResolveToken() {
 		ResponseEntity<LoginWithPasswordResponseBody> response = restClient.loginWithPassword(
-				new LoginWithPasswordlRequestBody(restClientProperties.getEmail(), restClientProperties.getPassword()));
+				new LoginWithPasswordRequestBody(restClientProperties.getEmail(), restClientProperties.getPassword()));
 		if (response.getBody() == null || response.getBody().token() == null) {
 			throw new IllegalStateException("Lovebox login did not return an authorization token");
 		}

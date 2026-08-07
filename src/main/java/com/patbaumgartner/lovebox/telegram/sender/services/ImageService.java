@@ -1,6 +1,5 @@
 package com.patbaumgartner.lovebox.telegram.sender.services;
 
-import com.patbaumgartner.lovebox.telegram.sender.utils.Pair;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +41,7 @@ public class ImageService {
 	public static final String FONT_NAME = "Sans";
 
 	@SneakyThrows
-	public Pair<String, byte[]> resizeImageToPair(File file, String text) {
+	public String resizeImageToBase64(File file, String text) {
 		BufferedImage originalImage = ImageIO.read(file);
 		BufferedImage resizedImage = Scalr.resize(originalImage, Scalr.Method.AUTOMATIC, Scalr.Mode.AUTOMATIC,
 				DISPLAY_WIDTH, DISPLAY_HEIGHT, Scalr.OP_ANTIALIAS);
@@ -63,21 +62,21 @@ public class ImageService {
 
 		graphics.dispose();
 
-		return constructImagePair(image);
+		return toBase64Image(image);
 	}
 
 	@SneakyThrows
-	public Pair<String, byte[]> createTextImageToPair(String message) {
-		return createTextImageToPair(message, null, createRandomBackgroundColor(), false);
+	public String createTextImage(String message) {
+		return createTextImage(message, null, createRandomBackgroundColor(), false);
 	}
 
 	@SneakyThrows
-	public Pair<String, byte[]> createTextImageToPair(String message, Integer lockedFontSize) {
-		return createTextImageToPair(message, lockedFontSize, createRandomBackgroundColor(), false);
+	public String createTextImage(String message, Integer lockedFontSize) {
+		return createTextImage(message, lockedFontSize, createRandomBackgroundColor(), false);
 	}
 
 	@SneakyThrows
-	public Pair<String, byte[]> createTextImageToPair(String message, Integer lockedFontSize, Color backgroundColor,
+	public String createTextImage(String message, Integer lockedFontSize, Color backgroundColor,
 			boolean topAligned) {
 		BufferedImage image = new BufferedImage(DISPLAY_WIDTH, DISPLAY_HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D graphics = image.createGraphics();
@@ -91,13 +90,13 @@ public class ImageService {
 
 		graphics.dispose();
 
-		return constructImagePair(image);
+		return toBase64Image(image);
 	}
 
-	public List<PreparedTextMessage> prepareTextMessages(String text) {
+	public List<String> prepareTextMessages(String text) {
 		String normalizedMessage = normalizeMessage(text);
 		if (normalizedMessage.isEmpty()) {
-			return List.of(new PreparedTextMessage("", createTextImageToPair("")));
+			return List.of(createTextImage(""));
 		}
 
 		BufferedImage image = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
@@ -110,12 +109,10 @@ public class ImageService {
 			List<String> chunks = splitTextIntoMessageChunks(normalizedMessage, graphics, lockedFontSize);
 			boolean splitSequence = chunks.size() > 1;
 			Color backgroundColor = splitSequence ? createRandomBackgroundColor() : null;
-			List<PreparedTextMessage> preparedMessages = new ArrayList<>();
+			List<String> preparedMessages = new ArrayList<>();
 			for (String chunk : chunks) {
-				Pair<String, byte[]> imagePair = splitSequence
-						? createTextImageToPair(chunk, lockedFontSize, backgroundColor, true)
-						: createTextImageToPair(chunk);
-				preparedMessages.add(new PreparedTextMessage(chunk, imagePair));
+				preparedMessages.add(splitSequence ? createTextImage(chunk, lockedFontSize, backgroundColor, true)
+						: createTextImage(chunk));
 			}
 			return preparedMessages;
 		}
@@ -368,15 +365,12 @@ public class ImageService {
 	private record LayoutResult(List<String> lines, Font font, int blockWidth) {
 	}
 
-	public record PreparedTextMessage(String text, Pair<String, byte[]> imagePair) {
-	}
-
-	protected Pair<String, byte[]> constructImagePair(BufferedImage image) throws IOException {
+	protected String toBase64Image(BufferedImage image) throws IOException {
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		ImageIO.write(image, "png", output);
 		String base64Image = Base64.getEncoder().encodeToString(output.toByteArray());
 
-		return new Pair("data:image/png;base64," + base64Image, output.toByteArray());
+		return "data:image/png;base64," + base64Image;
 	}
 
 }
