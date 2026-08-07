@@ -10,7 +10,6 @@ COMPOSE_FILE="${APP_DIR}/docker-compose.yml"
 
 PLACEHOLDER_VALUES=(
   "replace-me"
-  "change-me"
   "me@email.com"
   "mySecret"
   "Lovebox_bot"
@@ -93,23 +92,6 @@ install_runtime_files() {
   fi
 }
 
-ensure_port_is_free() {
-  if command -v ss >/dev/null 2>&1; then
-    if ss -ltn '( sport = :8080 )' | tail -n +2 | grep -q .; then
-      echo "Port 8080 is already in use. Free the port or change the compose port mapping before continuing." >&2
-      exit 1
-    fi
-    return
-  fi
-
-  if command -v netstat >/dev/null 2>&1; then
-    if netstat -ltn 2>/dev/null | awk '{print $4}' | grep -Eq '(^|:)8080$'; then
-      echo "Port 8080 is already in use. Free the port or change the compose port mapping before continuing." >&2
-      exit 1
-    fi
-  fi
-}
-
 check_env_placeholders() {
   local placeholder
   for placeholder in "${PLACEHOLDER_VALUES[@]}"; do
@@ -180,7 +162,6 @@ main() {
   check_required_env_keys
   check_env_placeholders
   check_database_file
-  ensure_port_is_free
   start_container
   print_next_steps
 }

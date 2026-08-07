@@ -5,8 +5,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.imgscalr.Scalr;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
@@ -42,8 +40,6 @@ public class ImageService {
 	public static final int MIN_TEXT_FONT_SIZE = 44;
 
 	public static final String FONT_NAME = "Sans";
-
-	public final ResourceLoader resourceLoader;
 
 	@SneakyThrows
 	public Pair<String, byte[]> resizeImageToPair(File file, String text) {
@@ -126,21 +122,6 @@ public class ImageService {
 		finally {
 			graphics.dispose();
 		}
-	}
-
-	@SneakyThrows
-	public Pair<String, byte[]> createFixedImageToPair() {
-		Resource resource = resourceLoader.getResource("lovebox.jpeg");
-		Image image = ImageIO.read(resource.getInputStream());
-		image = image.getScaledInstance(DISPLAY_WIDTH, DISPLAY_HEIGHT, Image.SCALE_SMOOTH);
-		BufferedImage bufferedImage = new BufferedImage(DISPLAY_WIDTH, DISPLAY_HEIGHT, BufferedImage.TYPE_INT_ARGB);
-
-		Graphics2D graphics = bufferedImage.createGraphics();
-		graphics.drawImage(image, 0, 0, null);
-
-		graphics.dispose();
-
-		return constructImagePair(bufferedImage);
 	}
 
 	protected void drawCenteredMessage(Graphics2D graphics, String text) {

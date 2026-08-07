@@ -35,7 +35,7 @@ class ScheduledMessageRepositoryTest {
 	@Test
 	void findsOnlyTheMessageForTheExactDate() {
 		assertThat(repository.findMessageForDate(LocalDate.of(2026, 5, 26)))
-			.contains(new ScheduledMessage(LocalDate.of(2026, 5, 26), "26.05.26\nSend me"));
+			.contains(new ScheduledMessage(LocalDate.of(2026, 5, 26), "26.05.26\\nSend me"));
 		assertThat(repository.findMessageForDate(LocalDate.of(2026, 5, 27))).isEmpty();
 	}
 

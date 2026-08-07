@@ -53,8 +53,12 @@ public class LoveboxBot implements SpringLongPollingBot, LongPollingSingleThread
 			if (message.hasText()) {
 				dispatchService.dispatchText(message.getChatId(), message.getText());
 			}
-			else {
+			else if (message.hasPhoto()) {
 				dispatchMediaMessage(message);
+			}
+			else {
+				telegramMessageService.sendTextMessage(message.getChatId(), "Only text and photos are supported.");
+				return;
 			}
 			telegramMessageService.sendTextMessage(message.getChatId(), "Message submitted to Lovebox.");
 		}
@@ -68,16 +72,11 @@ public class LoveboxBot implements SpringLongPollingBot, LongPollingSingleThread
 	}
 
 	private void dispatchMediaMessage(Message message) {
-		Pair<String, byte[]> imagePair = null;
-		if (message.hasPhoto()) {
-			File file = telegramMessageService.downloadImageFromPhotoMessage(message);
-			if (file != null) {
-				imagePair = imageService.resizeImageToPair(file, message.getCaption());
-			}
+		File file = telegramMessageService.downloadImageFromPhotoMessage(message);
+		if (file == null) {
+			throw new IllegalStateException("Telegram photo could not be downloaded");
 		}
-		if (imagePair == null) {
-			imagePair = imageService.createFixedImageToPair();
-		}
+		Pair<String, byte[]> imagePair = imageService.resizeImageToPair(file, message.getCaption());
 		dispatchService.dispatchPreparedMessage(message.getCaption(), imagePair);
 	}
 
