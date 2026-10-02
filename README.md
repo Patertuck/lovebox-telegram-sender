@@ -2,9 +2,10 @@
 
 This application sends a Lovebox message scheduled for the current date at 21:30 in the `Europe/Zurich` time zone. It also accepts manual text and photo messages from one authorized Telegram chat.
 
-It does not poll Lovebox delivery states, receive hearts, or track whether a message arrived.
+Messages are stored in a persistent outbox and sent one at a time. The next message is submitted only after
+Lovebox reports that the current message was read, preventing multiple unread messages from rotating on the display.
 
-When there is no scheduled database message for a date, it sends one random unused picture from `data/pictures`. A picture is moved to `data/pictures/sent` only after Lovebox accepts its submission, so it is not sent twice. The application temporarily copies a selected picture to `data/pictures/.sending` before submitting it; do not add files there.
+When there is no scheduled database message for a date, it queues one random unused picture from `data/pictures`. A picture is moved to `data/pictures/sent` only after it is safely stored in the outbox, so it is not queued twice. The application temporarily copies a selected picture to `data/pictures/.sending` before queueing it; do not add files there.
 
 ## Scheduled-message database
 
@@ -57,6 +58,8 @@ Use `.env.example` as the template for `.env`. The relevant database setting is:
 ```properties
 MESSAGES_DATABASE_PATH=/app/data/messages.db
 MESSAGES_PICTURES_PATH=/app/data/pictures
+MESSAGES_OUTBOX_PATH=/app/data/outbox.db
+LOVEBOX_POLL_INTERVAL=10s
 ```
 
 The normal schedule is 21:30 Europe/Zurich.

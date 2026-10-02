@@ -59,7 +59,7 @@ public class LoveboxBot implements SpringLongPollingBot, LongPollingSingleThread
 				telegramMessageService.sendTextMessage(message.getChatId(), "Only text and photos are supported.");
 				return;
 			}
-			telegramMessageService.sendTextMessage(message.getChatId(), "Message submitted to Lovebox.");
+			telegramMessageService.sendTextMessage(message.getChatId(), "Message queued for Lovebox.");
 		}
 		catch (RuntimeException e) {
 			log.error("Failed to submit Telegram message to Lovebox.", e);

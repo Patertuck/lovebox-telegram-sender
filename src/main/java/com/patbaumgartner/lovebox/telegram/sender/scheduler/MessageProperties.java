@@ -13,4 +13,6 @@ public class MessageProperties {
 
 	private String picturesPath;
 
+	private String outboxPath = "data/outbox.db";
+
 }

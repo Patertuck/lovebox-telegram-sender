@@ -51,7 +51,8 @@ class FallbackPictureServiceTest {
 		Files.writeString(picturesDirectory.resolve("broken.png"), "broken");
 		Files.writeString(picturesDirectory.resolve("valid.jpg"), "valid");
 		FallbackPictureService service = serviceFor(picturesDirectory);
-		when(imageService.resizeImageToBase64(argThat(file -> file != null && file.getName().equals("broken.png")), isNull()))
+		when(imageService.resizeImageToBase64(argThat(file -> file != null && file.getName().equals("broken.png")),
+				isNull()))
 			.thenThrow(new IllegalStateException("Unreadable image"));
 
 		assertTrue(service.sendRandomPicture());

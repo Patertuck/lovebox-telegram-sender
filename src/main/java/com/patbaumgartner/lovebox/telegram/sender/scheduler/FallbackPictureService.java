@@ -5,6 +5,7 @@ import com.patbaumgartner.lovebox.telegram.sender.services.ImageService;
 import com.patbaumgartner.lovebox.telegram.sender.services.LoveboxMessageDispatchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.util.Locale;
 
 @Slf4j
 @Service
+@Profile("!import")
 @RequiredArgsConstructor
 public class FallbackPictureService {
 
@@ -62,10 +64,11 @@ public class FallbackPictureService {
 				deleteOriginal(candidate, archivedPicture);
 			}
 			catch (IOException e) {
-				log.error("Submitted fallback picture {}, but could not archive it. It remains in .sending to prevent reuse.",
+				log.error(
+						"Submitted fallback picture {}, but could not archive it. It remains in .sending to prevent reuse.",
 						candidate.getFileName(), e);
 			}
-			log.info("Submitted fallback picture {}.", candidate.getFileName());
+			log.info("Queued fallback picture {}.", candidate.getFileName());
 			return true;
 		}
 
@@ -79,8 +82,10 @@ public class FallbackPictureService {
 		}
 
 		try (var files = Files.list(picturesDirectory)) {
-			return new ArrayList<>(files.filter(Files::isRegularFile).filter(this::isSupportedImage)
-				.filter(path -> isUnused(path, picturesDirectory)).toList());
+			return new ArrayList<>(files.filter(Files::isRegularFile)
+				.filter(this::isSupportedImage)
+				.filter(path -> isUnused(path, picturesDirectory))
+				.toList());
 		}
 		catch (IOException e) {
 			log.warn("Could not read fallback picture directory {}.", picturesDirectory, e);

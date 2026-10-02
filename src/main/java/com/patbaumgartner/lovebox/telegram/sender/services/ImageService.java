@@ -76,8 +76,13 @@ public class ImageService {
 	}
 
 	@SneakyThrows
-	public String createTextImage(String message, Integer lockedFontSize, Color backgroundColor,
-			boolean topAligned) {
+	public String createTextImage(String message, Integer lockedFontSize, Color backgroundColor, boolean topAligned) {
+		return createTextImage(message, lockedFontSize, backgroundColor, topAligned, null);
+	}
+
+	@SneakyThrows
+	private String createTextImage(String message, Integer lockedFontSize, Color backgroundColor, boolean topAligned,
+			String pageMarker) {
 		BufferedImage image = new BufferedImage(DISPLAY_WIDTH, DISPLAY_HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D graphics = image.createGraphics();
 
@@ -86,6 +91,9 @@ public class ImageService {
 
 		if (message != null) {
 			drawWrappedMessage(graphics, message, lockedFontSize, topAligned);
+		}
+		if (pageMarker != null) {
+			drawPageMarker(graphics, pageMarker);
 		}
 
 		graphics.dispose();
@@ -110,8 +118,10 @@ public class ImageService {
 			boolean splitSequence = chunks.size() > 1;
 			Color backgroundColor = splitSequence ? createRandomBackgroundColor() : null;
 			List<String> preparedMessages = new ArrayList<>();
-			for (String chunk : chunks) {
-				preparedMessages.add(splitSequence ? createTextImage(chunk, lockedFontSize, backgroundColor, true)
+			for (int i = 0; i < chunks.size(); i++) {
+				String chunk = chunks.get(i);
+				preparedMessages.add(splitSequence
+						? createTextImage(chunk, lockedFontSize, backgroundColor, true, (i + 1) + "/" + chunks.size())
 						: createTextImage(chunk));
 			}
 			return preparedMessages;
@@ -232,6 +242,9 @@ public class ImageService {
 		FontMetrics fontMetrics = graphics.getFontMetrics();
 		List<String> wrappedLines = wrapTextToLines(normalizedMessage, fontMetrics);
 		int maxLinesPerChunk = Math.max(1, getAvailableHeight() / fontMetrics.getHeight());
+		if (wrappedLines.size() > maxLinesPerChunk) {
+			maxLinesPerChunk = Math.max(1, maxLinesPerChunk - 1);
+		}
 
 		List<String> chunks = new ArrayList<>();
 		List<String> currentChunk = new ArrayList<>();
@@ -248,6 +261,16 @@ public class ImageService {
 		}
 
 		return chunks;
+	}
+
+	private void drawPageMarker(Graphics2D graphics, String pageMarker) {
+		Font markerFont = new Font(FONT_NAME, Font.PLAIN, 28);
+		graphics.setFont(markerFont);
+		graphics.setColor(new Color(255, 255, 255, 190));
+		FontMetrics fontMetrics = graphics.getFontMetrics();
+		int x = DISPLAY_WIDTH - BORDER_WIDTH - fontMetrics.stringWidth(pageMarker);
+		int y = DISPLAY_HEIGHT - BORDER_WIDTH - fontMetrics.getDescent();
+		graphics.drawString(pageMarker, x, y);
 	}
 
 	private int calculateBlockWidth(List<String> lines, FontMetrics fontMetrics) {

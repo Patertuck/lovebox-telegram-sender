@@ -13,22 +13,35 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class LoveboxService {
 
+	private static final Duration TOKEN_TTL = Duration.ofMinutes(30);
+
 	private final LoveboxRestClientProperties restClientProperties;
 
 	private final LoveboxRestClient restClient;
 
-	public void sendImageMessage(String imageAsBase64) {
+	private final Object tokenLock = new Object();
+
+	private volatile String cachedToken;
+
+	private volatile Instant tokenExpiresAt = Instant.EPOCH;
+
+	public LoveboxSendResult sendImageMessage(String imageAsBase64) {
 		if (!restClientProperties.isEnabled()) {
 			log.info("Lovebox sending is disabled; skipped message submission.");
-			return;
+			return new LoveboxSendResult(UUID.randomUUID().toString());
 		}
 
 		String mutation = """
@@ -52,12 +65,44 @@ public class LoveboxService {
 		options.put("templateId", null);
 		variables.put("options", options);
 
-		ResponseEntity<String> response = restClient.graphql("Bearer " + loginAndResolveToken(),
+		ResponseEntity<String> response = restClient.graphql("Bearer " + resolveToken(),
 				new GraphqlRequestBody("sendPixNote", variables, mutation));
-		ensureSubmitted(response.getBody());
+		return new LoveboxSendResult(resolveSubmittedMessageId(response.getBody()));
 	}
 
-	private String loginAndResolveToken() {
+	public List<LoveboxMessageStatus> getMessages() {
+		if (!restClientProperties.isEnabled()) {
+			return List.of();
+		}
+
+		String query = """
+				query getMessages($getMessagesInput: GetMessagesInput) {
+				  getMessages(getMessagesInput: $getMessagesInput) { _id status { label } }
+				}
+				""";
+		Map<String, Object> input = Map.of("recipient", restClientProperties.getBoxId(), "limit", 10, "skip", 0);
+		ResponseEntity<String> response = restClient.graphql("Bearer " + resolveToken(),
+				new GraphqlRequestBody("getMessages", Map.of("getMessagesInput", input), query));
+		return parseMessageStatuses(response.getBody());
+	}
+
+	public boolean isEnabled() {
+		return restClientProperties.isEnabled();
+	}
+
+	private String resolveToken() {
+		if (cachedToken == null || Instant.now().isAfter(tokenExpiresAt)) {
+			synchronized (tokenLock) {
+				if (cachedToken == null || Instant.now().isAfter(tokenExpiresAt)) {
+					cachedToken = login();
+					tokenExpiresAt = Instant.now().plus(TOKEN_TTL);
+				}
+			}
+		}
+		return cachedToken;
+	}
+
+	private String login() {
 		ResponseEntity<LoginWithPasswordResponseBody> response = restClient.loginWithPassword(
 				new LoginWithPasswordRequestBody(restClientProperties.getEmail(), restClientProperties.getPassword()));
 		if (response.getBody() == null || response.getBody().token() == null) {
@@ -66,7 +111,7 @@ public class LoveboxService {
 		return response.getBody().token();
 	}
 
-	private void ensureSubmitted(String body) {
+	private String resolveSubmittedMessageId(String body) {
 		if (body == null || body.isBlank()) {
 			throw new IllegalStateException("Lovebox send response is empty");
 		}
@@ -75,6 +120,32 @@ public class LoveboxService {
 		if (data == null || !data.has("sendPixNote") || data.get("sendPixNote").isJsonNull()) {
 			throw new IllegalStateException("Lovebox did not accept the message submission");
 		}
+		JsonObject submitted = data.getAsJsonObject("sendPixNote");
+		if (!submitted.has("_id") || submitted.get("_id").isJsonNull()) {
+			throw new IllegalStateException("Lovebox send response did not contain a message id");
+		}
+		return submitted.get("_id").getAsString();
+	}
+
+	private List<LoveboxMessageStatus> parseMessageStatuses(String body) {
+		if (body == null || body.isBlank()) {
+			throw new IllegalStateException("Lovebox message status response is empty");
+		}
+		JsonObject root = JsonParser.parseString(body).getAsJsonObject();
+		JsonObject data = root.getAsJsonObject("data");
+		if (data == null || !data.has("getMessages") || !data.get("getMessages").isJsonArray()) {
+			throw new IllegalStateException("Lovebox message status response is invalid");
+		}
+		List<LoveboxMessageStatus> statuses = new ArrayList<>();
+		for (JsonElement element : data.getAsJsonArray("getMessages")) {
+			JsonObject message = element.getAsJsonObject();
+			JsonObject status = message.getAsJsonObject("status");
+			if (message.has("_id") && status != null && status.has("label")) {
+				statuses
+					.add(new LoveboxMessageStatus(message.get("_id").getAsString(), status.get("label").getAsString()));
+			}
+		}
+		return statuses;
 	}
 
 }

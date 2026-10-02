@@ -31,7 +31,7 @@ public class ScheduledMessageScheduler {
 		scheduledMessageRepository.findMessageForDate(sendDate).ifPresentOrElse(dueMessage -> {
 			try {
 				dispatchService.dispatchTextForScheduler(dueMessage.message());
-				log.info("Submitted scheduled message for {}.", sendDate);
+				log.info("Queued scheduled message for {}.", sendDate);
 			}
 			catch (RuntimeException e) {
 				log.error("Failed to submit scheduled message for {}.", sendDate, e);
