@@ -48,6 +48,7 @@ services:
     environment:
       MESSAGES_DATABASE_PATH: /app/data/messages.db
       MESSAGES_PICTURES_PATH: /app/data/pictures
+      MESSAGES_OUTBOX_PATH: /app/data/outbox.db
     volumes:
       - ./data:/app/data
     restart: unless-stopped
@@ -77,6 +78,7 @@ BOT_ALLOWED_CHAT_ID="8782720476"
 # Scheduled messages
 MESSAGES_DATABASE_PATH="/app/data/messages.db"
 MESSAGES_PICTURES_PATH="/app/data/pictures"
+MESSAGES_OUTBOX_PATH="/app/data/outbox.db"
 EOF
 }
 
@@ -84,6 +86,13 @@ install_runtime_files() {
   if [[ ! -f "${COMPOSE_FILE}" ]]; then
     write_compose_file
     echo "Created ${COMPOSE_FILE}"
+  elif ! grep -Fq 'MESSAGES_OUTBOX_PATH:' "${COMPOSE_FILE}"; then
+    if ! grep -Fq 'MESSAGES_PICTURES_PATH:' "${COMPOSE_FILE}"; then
+      echo "Add MESSAGES_OUTBOX_PATH: /app/data/outbox.db to the service environment in ${COMPOSE_FILE}." >&2
+      exit 1
+    fi
+    sed -i '/MESSAGES_PICTURES_PATH:/a\      MESSAGES_OUTBOX_PATH: /app/data/outbox.db' "${COMPOSE_FILE}"
+    echo "Added persistent outbox path to ${COMPOSE_FILE}"
   fi
 
   if [[ ! -f "${ENV_FILE}" ]]; then
@@ -140,6 +149,7 @@ check_database_file() {
 
 start_container() {
   docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" pull
+  docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" run --rm --no-deps --user root --entrypoint chown lovebox-telegram-sender -R cnb:cnb /app/data
   docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d
 }
 
